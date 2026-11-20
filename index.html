@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laboratório Automotive e Drones – modelo 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #E7EDF0;
+    --paper-2: #F5F8F9;
+    --ink: #17232C;
+    --ink-soft: #4C5B66;
+    --line: #B9C6CE;
+    --esd: #2F7FA3;
+    --wood: #C39A62;
+    --mark: #D8361E;
+    --cart: #E8891B;
+    --active: #17232C;
+    --on-active: #F5F8F9;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --paper: #121B22;
+      --paper-2: #1B2730;
+      --ink: #E4ECF0;
+      --ink-soft: #9CADB8;
+      --line: #33434E;
+      --esd: #4FA3C9;
+      --wood: #D0A973;
+      --mark: #F0563D;
+      --cart: #F2A03D;
+      --active: #E4ECF0;
+      --on-active: #121B22;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --paper: #121B22;
+    --paper-2: #1B2730;
+    --ink: #E4ECF0;
+    --ink-soft: #9CADB8;
+    --line: #33434E;
+    --esd: #4FA3C9;
+    --wood: #D0A973;
+    --mark: #F0563D;
+    --cart: #F2A03D;
+    --active: #E4ECF0;
+    --on-active: #121B22;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    height: 100%;
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.35;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  header {
+    padding: 12px 16px 8px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  h1 {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  header p {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 0.9375rem;
+  }
+  #stage {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 100% 32px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 32px 100%,
+      var(--paper-2);
+    touch-action: none;
+  }
+  #stage canvas { display: block; width: 100%; height: 100%; }
+  #fail {
+    position: absolute; inset: 0;
+    display: none;
+    align-items: center; justify-content: center;
+    padding: 24px; text-align: center;
+    background: var(--paper-2);
+  }
+  #hint {
+    position: absolute; left: 12px; bottom: 10px;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--ink-soft);
+    background: var(--paper-2);
+    padding: 2px 8px;
+    border-radius: 3px;
+    pointer-events: none;
+  }
+  .controls {
+    padding: 10px 16px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    align-items: center;
+  }
+  .seg {
+    display: inline-flex;
+    border: 1px solid var(--ink);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .seg button {
+    font: inherit;
+    font-weight: 500;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-right: 1px solid var(--ink);
+    padding: 8px 14px;
+    min-height: 40px;
+    cursor: pointer;
+  }
+  .seg button:last-child { border-right: 0; }
+  .seg button[aria-pressed="true"] { background: var(--active); color: var(--on-active); }
+  .seg button:focus-visible, label.check input:focus-visible {
+    outline: 2px solid var(--esd);
+    outline-offset: 2px;
+  }
+  label.check {
+    display: inline-flex; align-items: center; gap: 6px;
+    min-height: 40px; cursor: pointer;
+  }
+  label.check input { width: 18px; height: 18px; accent-color: var(--mark); }
+  .legend {
+    list-style: none;
+    margin: 0;
+    padding: 0 16px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: 0.875rem;
+    color: var(--ink-soft);
+  }
+  .legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i {
+    width: 12px; height: 12px; border-radius: 2px;
+    display: inline-block; border: 1px solid var(--line);
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Laboratório Automotive e Drones</h1>
+  <p id="state-note">Proposta: bancada em L, 3 postos + carrinho móvel</p>
+</header>
+
+<div id="stage">
+  <div id="fail">Este browser não conseguiu iniciar o WebGL. Abre a página noutro browser para ver o modelo 3D.</div>
+  <p id="hint">Arrasta para rodar, aperta para aproximar</p>
+</div>
+
+<div class="controls">
+  <div class="seg" role="group" aria-label="Estado da sala">
+    <button type="button" data-state="atual" aria-pressed="false">Atual</button>
+    <button type="button" data-state="proposta" aria-pressed="true">Proposta</button>
+  </div>
+  <div class="seg" role="group" aria-label="Vista">
+    <button type="button" data-view="persp" aria-pressed="true">Perspetiva</button>
+    <button type="button" data-view="planta" aria-pressed="false">Planta</button>
+    <button type="button" data-view="porta" aria-pressed="false">Da porta</button>
+  </div>
+  <label class="check"><input type="checkbox" id="cotas" checked> Mostrar cotas</label>
+</div>
+
+<ul class="legend" id="legend">
+  <li><i style="background:var(--wood)"></i>Software, 2 postos (2,6 × 0,7 m)</li>
+  <li><i style="background:var(--esd)"></i>Ensaios com tapete ESD, no nicho (1,7 × 0,8 m, a 90 cm)</li>
+  <li><i style="background:var(--cart)"></i>Carrinho de ensaio móvel (4.º posto)</li>
+  <li><i style="background:#E3C53A"></i>Armário de carga LiPo</li>
+  <li><i style="background:var(--mark)"></i>Limite da zona útil</li>
+</ul>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function () {
+  var stage = document.getElementById('stage');
+  var renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  } catch (e) {
+    document.getElementById('fail').style.display = 'flex';
+    return;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  stage.insertBefore(renderer.domElement, stage.firstChild);
+
+  // Dimensões assumidas (m). x: da parede dos posters para a direita. z: do fundo (nicho) para o vidro.
+  var W = 3.4, D = 2.6, H = 2.5;
+  var NX0 = 0.6, NX1 = 2.4, ND = 0.35, NH = 2.2; // nicho
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(48, 1, 0.05, 60);
+  var controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.minDistance = 1.2;
+  controls.maxDistance = 12;
+  controls.maxPolarAngle = Math.PI / 2 - 0.02;
+
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f94, 0.85));
+  var sun = new THREE.DirectionalLight(0xffffff, 0.65);
+  sun.position.set(3.2, 5.5, 4.2);
+  sun.target.position.set(1.5, 0, 1);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.left = -4; sun.shadow.camera.right = 4;
+  sun.shadow.camera.top = 4; sun.shadow.camera.bottom = -4;
+  sun.shadow.camera.near = 0.5; sun.shadow.camera.far = 14;
+  sun.shadow.bias = -0.0015;
+  scene.add(sun); scene.add(sun.target);
+
+  function mat(color, opts) {
+    var o = { color: color, roughness: 0.85, metalness: 0.0 };
+    if (opts) for (var k in opts) o[k] = opts[k];
+    return new THREE.MeshStandardMaterial(o);
+  }
+  var M = {
+    wall: mat(0xF1F1EE),
+    floor: mat(0x5E554F, { roughness: 1 }),
+    wood: mat(0xC39A62, { roughness: 0.6 }),
+    esd: mat(0x2F7FA3, { roughness: 0.7 }),
+    steel: mat(0x3A4046, { roughness: 0.5, metalness: 0.4 }),
+    white: mat(0xE9E9E6, { roughness: 0.6 }),
+    dark: mat(0x1D2125, { roughness: 0.6 }),
+    screen: mat(0x26394A, { roughness: 0.25, emissive: 0x16242F }),
+    chair: mat(0x24272B, { roughness: 0.7 }),
+    box: mat(0xB58E63, { roughness: 0.95 }),
+    cart: mat(0xE8891B, { roughness: 0.6 }),
+    lipo: mat(0xE3C53A, { roughness: 0.6 }),
+    led: mat(0xFFF6D8, { emissive: 0xFFF1C2, emissiveIntensity: 1 }),
+    peg: mat(0x6E7A82, { roughness: 0.9 }),
+    poster: mat(0x23282D, { roughness: 0.8 }),
+    mark: new THREE.MeshBasicMaterial({ color: 0xD8361E }),
+    glass: new THREE.MeshStandardMaterial({ color: 0xBFD9E6, transparent: true, opacity: 0.16, roughness: 0.1, side: THREE.DoubleSide, depthWrite: false })
+  };
+
+  function bx(parent, x0, x1, y0, y1, z0, z1, m, noShadow) {
+    var g = new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0);
+    var b = new THREE.Mesh(g, m);
+    b.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+    if (!noShadow) { b.castShadow = true; b.receiveShadow = true; }
+    parent.add(b);
+    return b;
+  }
+  function cyl(parent, r, h, x, y, z, m) {
+    var c = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 20), m);
+    c.position.set(x, y, z);
+    c.castShadow = true; c.receiveShadow = true;
+    parent.add(c);
+    return c;
+  }
+  // Plano virado para dentro: só se vê de dentro, por isso as paredes não tapam a vista exterior.
+  function plane(parent, w, h, x, y, z, rx, ry, m) {
+    var p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m);
+    p.position.set(x, y, z);
+    p.rotation.set(rx, ry, 0);
+    p.receiveShadow = true;
+    parent.add(p);
+    return p;
+  }
+
+  // ---------- Sala (comum) ----------
+  var room = new THREE.Group(); scene.add(room);
+  plane(room, W, D + ND, W / 2, 0, (D - ND) / 2, -Math.PI / 2, 0, M.floor);                 // chão
+  plane(room, D, H, 0, H / 2, D / 2, 0, Math.PI / 2, M.wall);                               // parede dos posters
+  plane(room, D, H, W, H / 2, D / 2, 0, -Math.PI / 2, M.wall);                              // parede direita
+  plane(room, NX0, H, NX0 / 2, H / 2, 0, 0, 0, M.wall);                                     // fundo, esquerda do nicho
+  plane(room, W - NX1, H, (W + NX1) / 2, H / 2, 0, 0, 0, M.wall);                           // fundo, direita do nicho
+  plane(room, NX1 - NX0, H - NH, (NX0 + NX1) / 2, (H + NH) / 2, 0, 0, 0, M.wall);           // fundo, sobre o nicho
+  plane(room, NX1 - NX0, NH, (NX0 + NX1) / 2, NH / 2, -ND, 0, 0, M.wall);                   // nicho, fundo
+  plane(room, ND, NH, NX0, NH / 2, -ND / 2, 0, Math.PI / 2, M.wall);                        // nicho, lado esq.
+  plane(room, ND, NH, NX1, NH / 2, -ND / 2, 0, -Math.PI / 2, M.wall);                       // nicho, lado dir.
+  plane(room, NX1 - NX0, ND, (NX0 + NX1) / 2, NH, -ND / 2, Math.PI / 2, 0, M.wall);         // nicho, teto
+  var glass = new THREE.Mesh(new THREE.PlaneGeometry(W, H), M.glass);                        // divisória de vidro
+  glass.position.set(W / 2, H / 2, D); room.add(glass);
+
+  // Porta de vidro aberta (parede direita, junto ao vidro)
+  var door = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 2.05), M.glass);
+  door.position.set(W - 0.28, 1.025, D - 0.82 + 0.28); door.rotation.y = Math.PI / 4; room.add(door);
+  bx(room, W - 0.02, W, 0, 2.08, D - 0.86, D - 0.82, M.steel, true);
+  bx(room, W - 0.02, W, 0, 2.08, D - 0.03, D, M.steel, true);
+
+  // Armário metálico alto, radiador, AC, posters
+  bx(room, W - 0.42, W, 0, 1.95, 0.82, 1.72, M.white);
+  bx(room, W - 0.425, W - 0.42, 0.05, 1.9, 1.265, 1.275, M.steel, true);
+  bx(room, 2.5, 3.0, 0.12, 0.62, 0.0, 0.09, M.white);
+  bx(room, 0, 0.22, 2.08, 2.38, 1.55, 2.45, M.white);
+  for (var i = 0; i < 4; i++) {
+    bx(room, 0, 0.012, 1.42, 1.95, 0.25 + i * 0.52, 0.63 + i * 0.52, M.poster, true);
+  }
+
+  // ---------- Estado atual ----------
+  var atual = new THREE.Group(); scene.add(atual);
+  function chair(parent, x, z, rot) {
+    var g = new THREE.Group();
+    bx(g, -0.24, 0.24, 0.42, 0.5, -0.24, 0.24, M.chair);
+    bx(g, -0.24, 0.24, 0.5, 0.95, 0.2, 0.26, M.chair);
+    bx(g, -0.22, -0.19, 0, 0.42, -0.2, 0.22, M.steel);
+    bx(g, 0.19, 0.22, 0, 0.42, -0.2, 0.22, M.steel);
+    g.position.set(x, 0, z); g.rotation.y = rot; parent.add(g);
+    return g;
+  }
+  bx(atual, 0.62, 2.3, 0.7, 0.74, 0.55, 2.1, M.wood);
+  bx(atual, 1.36, 1.56, 0, 0.7, 0.9, 1.75, M.white);
+  chair(atual, 0.36, 0.95, -Math.PI / 2); chair(atual, 0.36, 1.7, -Math.PI / 2);
+  chair(atual, 1.05, 0.3, Math.PI); chair(atual, 1.85, 0.3, Math.PI);
+  chair(atual, 1.05, 2.33, 0); chair(atual, 1.85, 2.33, 0);
+  bx(atual, 1.5, 1.94, 0, 0.62, -0.3, 0.22, M.white); bx(atual, 1.95, 2.39, 0, 0.62, -0.3, 0.22, M.white);
+  bx(atual, 1.56, 1.9, 0.62, 0.84, -0.25, 0.12, M.dark); bx(atual, 1.98, 2.36, 0.62, 1.08, -0.28, 0.12, M.dark);
+  bx(atual, W - 0.6, W, 0, 0.5, 0.12, 0.75, M.box); bx(atual, W - 0.55, W, 0.5, 0.95, 0.15, 0.72, M.box);
+  bx(atual, W - 0.5, W, 0.95, 1.3, 0.18, 0.7, M.box);
+
+  // ---------- Proposta ----------
+  var prop = new THREE.Group(); scene.add(prop);
+
+  // Bancada de software: parede dos posters, 2,6 × 0,7 m, h = 74 cm
+  bx(prop, 0, 0.7, 0.70, 0.74, 0, D, M.wood);
+  [[0.66, 0.5], [0.66, 1.4], [0.66, 2.55], [0.04, 2.55]].forEach(function (p) {
+    bx(prop, p[0] - 0.025, p[0] + 0.025, 0, 0.7, p[1] - 0.025, p[1] + 0.025, M.steel);
+  });
+  bx(prop, 0, 0.045, 0.86, 0.94, 0, D, M.white, true);                                   // calha técnica
+  function monitor(z) {
+    bx(prop, 0.2, 0.225, 0.9, 1.26, z - 0.36, z + 0.36, M.dark);
+    bx(prop, 0.226, 0.23, 0.92, 1.24, z - 0.34, z + 0.34, M.screen, true);
+    bx(prop, 0.16, 0.2, 0.74, 1.05, z - 0.03, z + 0.03, M.steel);
+    bx(prop, 0.42, 0.56, 0.74, 0.755, z - 0.2, z + 0.2, M.dark, true);                   // teclado
+  }
+  function taskChair(x, z, rot) {
+    var g = new THREE.Group();
+    cyl(g, 0.25, 0.03, 0, 0.04, 0, M.steel); cyl(g, 0.03, 0.4, 0, 0.25, 0, M.steel);
+    bx(g, -0.23, 0.23, 0.44, 0.52, -0.23, 0.23, M.chair);
+    bx(g, -0.22, 0.22, 0.56, 1.0, 0.2, 0.25, M.chair);
+    g.position.set(x, 0, z); g.rotation.y = rot; prop.add(g);
+  }
+  monitor(1.2); monitor(2.1);
+  taskChair(1.02, 1.2, -Math.PI / 2); taskChair(1.02, 2.1, -Math.PI / 2);
+  bx(prop, 0.1, 0.52, 0, 0.6, 0.03, 0.5, M.white);                                        // gavetas reaproveitadas
+
+  // Bancada de ensaios: encaixada no nicho, 1,7 × 0,8 m, h = 90 cm
+  bx(prop, 0.7, NX1, 0.86, 0.9, -ND, 0.45, M.white);
+  bx(prop, 0.72, NX1 - 0.02, 0.9, 0.906, -ND + 0.02, 0.43, M.esd, true);                  // tapete ESD
+  [[0.74, 0.41], [NX1 - 0.04, 0.41], [0.74, -0.3], [NX1 - 0.04, -0.3]].forEach(function (p) {
+    bx(prop, p[0] - 0.025, p[0] + 0.025, 0, 0.86, p[1] - 0.025, p[1] + 0.025, M.steel);
+  });
+  bx(prop, 1.9, 2.32, 0, 0.6, -0.28, 0.3, M.white);                                       // gavetas
+  bx(prop, 0.7, NX1, 0.98, 1.3, -ND + 0.005, -ND + 0.02, M.peg, true);                    // painel perfurado
+  bx(prop, 0.7, NX1, 0.92, 0.98, -ND + 0.005, -ND + 0.05, M.white, true);                 // calha técnica
+  bx(prop, 0.62, NX1, 1.42, 1.45, -ND, -0.05, M.white);                                   // prateleira de instrumentos
+  bx(prop, 0.7, NX1 - 0.05, 1.405, 1.42, -0.12, -0.09, M.led, true);                      // régua LED
+  bx(prop, 0.8, 1.15, 1.45, 1.65, -0.3, -0.1, M.dark);                                    // osciloscópio
+  bx(prop, 1.25, 1.5, 1.45, 1.6, -0.3, -0.1, M.steel);                                    // fonte de bancada
+  bx(prop, 1.6, 1.82, 1.45, 1.57, -0.3, -0.12, M.dark);
+  bx(prop, 0.82, 1.1, 0.906, 0.96, 0.0, 0.2, M.steel);                                    // ECU em ensaio
+  bx(prop, 1.1, 1.3, 0.906, 0.92, 0.08, 0.1, M.dark, true);
+  // Drone na bancada (sem hélices)
+  var drone = new THREE.Group();
+  bx(drone, -0.2, 0.2, 0.02, 0.04, -0.015, 0.015, M.dark); bx(drone, -0.015, 0.015, 0.02, 0.04, -0.2, 0.2, M.dark);
+  bx(drone, -0.06, 0.06, 0.015, 0.065, -0.06, 0.06, M.steel);
+  [[-0.2, 0], [0.2, 0], [0, -0.2], [0, 0.2]].forEach(function (p) { cyl(drone, 0.025, 0.035, p[0], 0.05, p[1], M.cart); });
+  drone.position.set(1.75, 0.906, 0.08); drone.rotation.y = Math.PI / 4; prop.add(drone);
+  function stool(x, z) {
+    cyl(prop, 0.2, 0.02, x, 0.02, z, M.steel); cyl(prop, 0.025, 0.62, x, 0.33, z, M.steel);
+    cyl(prop, 0.17, 0.06, x, 0.67, z, M.chair);
+  }
+  stool(1.5, 0.82); stool(2.1, 0.82);
+
+  // Carrinho de ensaio móvel
+  var cart = new THREE.Group();
+  bx(cart, 0, 0.6, 0.86, 0.9, 0, 0.8, M.cart); bx(cart, 0.02, 0.58, 0.3, 0.33, 0.02, 0.78, M.cart);
+  [[0.03, 0.03], [0.57, 0.03], [0.03, 0.77], [0.57, 0.77]].forEach(function (p) {
+    bx(cart, p[0] - 0.02, p[0] + 0.02, 0.08, 0.86, p[1] - 0.02, p[1] + 0.02, M.steel);
+    cyl(cart, 0.04, 0.04, p[0], 0.04, p[1], M.dark).rotation.z = Math.PI / 2;
+  });
+  bx(cart, 0.12, 0.45, 0.9, 1.0, 0.2, 0.55, M.steel);
+  cart.position.set(1.42, 0, 1.72); prop.add(cart);
+
+  // Estante das impressoras 3D + armário LiPo (parede direita, ao fundo)
+  bx(prop, W - 0.46, W, 0.0, 0.03, 0.14, 0.76, M.steel); bx(prop, W - 0.46, W, 0.74, 0.77, 0.14, 0.76, M.steel);
+  bx(prop, W - 0.46, W, 1.36, 1.39, 0.14, 0.76, M.steel);
+  [[W - 0.45, 0.15], [W - 0.02, 0.15], [W - 0.45, 0.75], [W - 0.02, 0.75]].forEach(function (p) {
+    bx(prop, p[0] - 0.015, p[0] + 0.015, 0, 1.39, p[1] - 0.015, p[1] + 0.015, M.steel);
+  });
+  bx(prop, W - 0.42, W - 0.04, 0.77, 1.22, 0.24, 0.66, M.dark);
+  bx(prop, W - 0.4, W - 0.06, 1.39, 1.62, 0.26, 0.64, M.dark);
+  bx(prop, W - 0.43, W - 0.03, 0.03, 0.55, 0.2, 0.7, M.lipo);
+
+  // ---------- Cotas ----------
+  var cotas = new THREE.Group(); scene.add(cotas);
+  function label(text, x, y, z, w) {
+    var c = document.createElement('canvas'); c.width = 256; c.height = 96;
+    var g = c.getContext('2d');
+    g.fillStyle = '#D8361E'; g.fillRect(0, 0, 256, 96);
+    g.fillStyle = '#ffffff'; g.font = '600 54px "Barlow Semi Condensed", "Arial Narrow", Arial, sans-serif';
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(text, 128, 50);
+    var t = new THREE.CanvasTexture(c);
+    var s = new THREE.Sprite(new THREE.SpriteMaterial({ map: t, depthTest: false }));
+    s.scale.set(w, w * 96 / 256, 1); s.position.set(x, y, z); s.renderOrder = 10;
+    cotas.add(s);
+  }
+  bx(cotas, -0.2, -0.18, 0, 0.02, 0, D, M.mark, true);
+  bx(cotas, -0.26, -0.12, 0, 0.02, -0.01, 0.01, M.mark, true); bx(cotas, -0.26, -0.12, 0, 0.02, D - 0.01, D + 0.01, M.mark, true);
+  bx(cotas, 0, 1.9, 0, 0.02, D + 0.18, D + 0.2, M.mark, true);
+  bx(cotas, -0.01, 0.01, 0, 0.02, D + 0.12, D + 0.26, M.mark, true); bx(cotas, 1.89, 1.91, 0, 0.02, D + 0.12, D + 0.26, M.mark, true);
+  var curve = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(1.9, 0.015, D), new THREE.Vector3(1.92, 0.015, 1.9),
+    new THREE.Vector3(2.1, 0.015, 1.25), new THREE.Vector3(2.5, 0.015, 0.85), new THREE.Vector3(2.92, 0.015, 0.8)
+  ]);
+  cotas.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 40, 0.012, 6, false), M.mark));
+  function addLabels() { label('2,6 m', -0.35, 0.22, D / 2, 0.5); label('1,9 m', 0.95, 0.22, D + 0.35, 0.5); }
+  if (document.fonts && document.fonts.ready) { document.fonts.ready.then(addLabels); } else { addLabels(); }
+
+  // ---------- Vistas ----------
+  var VIEWS = {
+    persp:  { p: [5.1, 3.5, 5.3],  t: [1.5, 0.7, 1.0] },
+    planta: { p: [1.7, 7.2, 1.16], t: [1.7, 0.0, 1.15] },
+    porta:  { p: [3.25, 1.65, 2.5], t: [1.0, 0.85, 0.5] }
+  };
+  var tween = null;
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function goView(name, instant) {
+    var v = VIEWS[name];
+    var p1 = new THREE.Vector3(v.p[0], v.p[1], v.p[2]), t1 = new THREE.Vector3(v.t[0], v.t[1], v.t[2]);
+    controls.maxPolarAngle = name === 'porta' ? Math.PI / 2 + 0.2 : Math.PI / 2 - 0.02;
+    controls.minDistance = name === 'porta' ? 0.4 : 1.2;
+    if (instant || reduce) { camera.position.copy(p1); controls.target.copy(t1); tween = null; return; }
+    tween = { p0: camera.position.clone(), t0: controls.target.clone(), p1: p1, t1: t1, k: 0 };
+  }
+
+  function setState(name) {
+    atual.visible = name === 'atual';
+    prop.visible = name === 'proposta';
+    document.getElementById('state-note').textContent = name === 'atual'
+      ? 'Atual: mesa de reuniões ao centro, 6 cadeiras'
+      : 'Proposta: bancada em L, 3 postos + carrinho móvel';
+    document.getElementById('legend').style.visibility = name === 'atual' ? 'hidden' : 'visible';
+  }
+
+  function press(group, btn) {
+    Array.prototype.forEach.call(group.querySelectorAll('button'), function (b) {
+      b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('[data-state]'), function (b) {
+    b.addEventListener('click', function () { press(b.parentNode, b); setState(b.getAttribute('data-state')); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (b) {
+    b.addEventListener('click', function () { press(b.parentNode, b); goView(b.getAttribute('data-view')); });
+  });
+  document.getElementById('cotas').addEventListener('change', function (e) { cotas.visible = e.target.checked; });
+  renderer.domElement.addEventListener('pointerdown', function () {
+    tween = null; document.getElementById('hint').style.display = 'none';
+  });
+
+  function resize() {
+    var w = stage.clientWidth, h = stage.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.fov = w < h ? 62 : 48;   // ecrãs em retrato precisam de mais abertura
+    camera.updateProjectionMatrix();
+  }
+  if (window.ResizeObserver) { new ResizeObserver(resize).observe(stage); }
+  window.addEventListener('resize', resize);
+
+  setState('proposta');
+  goView('persp', true);
+  resize();
+
+  (function loop() {
+    requestAnimationFrame(loop);
+    if (tween) {
+      tween.k = Math.min(1, tween.k + 0.04);
+      var e = tween.k * tween.k * (3 - 2 * tween.k);
+      camera.position.lerpVectors(tween.p0, tween.p1, e);
+      controls.target.lerpVectors(tween.t0, tween.t1, e);
+      if (tween.k >= 1) tween = null;
+    }
+    controls.update();
+    renderer.render(scene, camera);
+  })();
+})();
+</script>
+</body>
+</html>
